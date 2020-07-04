@@ -8,6 +8,7 @@ import android.widget.TextView
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.Marker
 import com.milictg.placebook.R
+import com.milictg.placebook.ui.MapsActivity
 
 class BookmarkInfoWindowAdapter(context: Activity) :
     GoogleMap.InfoWindowAdapter {
@@ -32,7 +33,7 @@ class BookmarkInfoWindowAdapter(context: Activity) :
         phoneView.text = marker.snippet ?: ""
 
         val imageView = contents.findViewById<ImageView>(R.id.photo)
-        imageView.setImageBitmap(marker.tag as Bitmap?)
+        imageView.setImageBitmap((marker.tag as MapsActivity.PlaceInfo).image)
 
         return contents
     }

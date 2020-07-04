@@ -16,6 +16,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PointOfInterest
 
@@ -27,6 +28,8 @@ import com.google.android.libraries.places.api.net.PlacesClient
 import com.milictg.placebook.R
 import com.milictg.placebook.adapter.BookmarkInfoWindowAdapter
 import com.milictg.placebook.viewmodel.MapsViewModel
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -49,11 +52,29 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
-        map.setInfoWindowAdapter(BookmarkInfoWindowAdapter(this))
+        setupMapListener()
         getCurrentLocation()
+    }
+
+    private fun setupMapListener() {
+        map.setInfoWindowAdapter(BookmarkInfoWindowAdapter(this))
         map.setOnPoiClickListener {
             displayPoi(it)
         }
+        map.setOnInfoWindowClickListener {
+            handleInfoWindowClick(it)
+        }
+    }
+
+    private fun handleInfoWindowClick(marker: Marker) {
+        val placeInfo = (marker.tag as PlaceInfo)
+
+        if (placeInfo.place != null) {
+            GlobalScope.launch {
+                mapsViewModel.addBookmarkFromPlace(placeInfo.place, placeInfo.image)
+            }
+        }
+        marker.remove()
     }
 
     private fun setupPlacesClient() {
@@ -129,7 +150,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 .title(place.name)
                 .snippet(place.phoneNumber)
         )
-        marker?.tag = photo
+        marker?.tag = PlaceInfo(place, photo)
     }
 
     override fun onRequestPermissionsResult(
@@ -188,4 +209,5 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         private const val TAG = "MapsActivity"
     }
 
+    internal class PlaceInfo(val place: Place? = null, val image: Bitmap? = null)
 }
