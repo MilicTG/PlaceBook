@@ -8,6 +8,8 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.location.*
 
@@ -15,10 +17,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
-import com.google.android.gms.maps.model.PointOfInterest
+import com.google.android.gms.maps.model.*
 
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.Place
@@ -37,6 +36,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var placesClient: PlacesClient
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private val mapsViewModel by viewModels<MapsViewModel>()
+    private var bookmarks: LiveData<List<BookmarkMarkerView>>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,6 +75,34 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
         marker.remove()
+    }
+
+    private fun addPlaceMarker(bookmark: MapsViewModel.BookmarkMarkerView): Marker? {
+        val marker = map.addMarker(
+            MarkerOptions()
+                .position(bookmark.location)
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+                .alpha(0.8f)
+        )
+        marker.tag = bookmark
+        return marker
+    }
+
+    private fun displayAllBookmarks(bookmarks: List<MapsViewModel.BookmarkMarkerView>) {
+        for (bookmark in bookmarks) {
+            addPlaceMarker(bookmark)
+        }
+    }
+
+    private fun createBookmarkMarkerObserver() {
+        mapsViewModel.getBookmarkMarkerViews()?.observe(
+            this, Observer<List<MapsViewModel.BookmarkMarkerView>> {
+                map.clear()
+                it?.let {
+                    displayAllBookmarks(it)
+                }
+            }
+        )
     }
 
     private fun setupPlacesClient() {
@@ -210,4 +238,5 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     internal class PlaceInfo(val place: Place? = null, val image: Bitmap? = null)
+    data class BookmarkMarkerView(var od: Long? = null, var location: LatLng = LatLng(0.0, 0.0))
 }
